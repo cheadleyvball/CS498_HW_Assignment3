@@ -2,3 +2,31 @@ flask
 pymongo
 dnspython
 pandas
+
+
+
+Logic for loading in python File:
+#Loading of the data from the EV excel file using python
+import csv
+import pymongo
+from pymongo import MongoClient
+import pandas as pd
+
+MongoDB_url = "mongodb+srv://ch85_db_user:Christian@cs498-hw3cluster.fh6mtv0.mongodb.net/ev_db?retryWrites=true&w=majority&appName=cs498-hw3cluster"
+csvPath  = "Electric_Vehicle_Population_Data.csv"
+batchSize = 500 
+client = MongoClient(MongoDB_url)
+databaseLoaded = client["ev_db"]
+collection = databaseLoaded["vehicles"]
+#collection.drop()
+recordsTotal = 0
+for chunk in pd.read_csv(csvPath, chunksize=batchSize):
+     #check to see of any problematic data such as null for exaample -> see if extra check is needed
+     chunk = chunk.where(pd.notnull(chunk), None)
+     batch = chunk.to_dict(orient="records")
+     collection.insert_many(batch, ordered = False)
+     recordsTotal += len(batch)
+     print(f"So far you are at {recordsTotal}")
+
+print(f"Success!! Total records loaded were {recordsTotal}")
+client.close()
